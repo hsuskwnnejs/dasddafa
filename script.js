@@ -893,9 +893,9 @@ function startBeatEngine(){
     if (on) { try{ if (changeId) clearInterval(changeId); }catch(e){} return; }
     return _startChangeTimer();
   };
-})(); // End Task System
+})(); 
 // End Task System
-})();
+
 
 function animateStroke(){
     const fill = document.getElementById("strokeFill");
