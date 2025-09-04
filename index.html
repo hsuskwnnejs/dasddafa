@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Instructor Overlay v3.1</title>
+  <link rel="stylesheet" href="style.css" />
+
+<style>
+#beatBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: rgba(0,0,0,0.3);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+.beatDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  bottom: 40px;
+}
+#beatCenterLine {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  background: rgba(255,255,255,0.3);
+}
+#strokeMeter {
+  position: absolute;
+  right: 10px;
+  top: 10%;
+  bottom: 10%;
+  width: 40px;
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+#strokeFill {
+  width: 100%;
+  background: linear-gradient(to top, #0f0, #0ff);
+  height: 0%;
+}
+</style>
+
+</head>
+<body>
+  <!-- SETTINGS -->
+  <div id="settings" class="panel">
+    <h1>Instructor Overlay</h1>
+    <div class="group">
+      <label for="videoLinks">Video URLs (one per line)</label>
+      <textarea id="videoLinks" rows="5" placeholder="https://example.com/video1.mp4
+https://www.youtube.com/watch?v=VIDEO_ID
+https://www.pornhub.com/view_video.php?viewkey=...
+https://luscious.net/albums/my-album_123456/"></textarea>
+      <small>Direct MP4/WebM links give best autoplay. YouTube/Pornhub are supported via embedded players.</small>
+    </div>
+
+    <div class="row">
+      <div class="group">
+        <label for="minBpm">Min BPM</label>
+        <input id="minBpm" type="number" value="60" min="20" max="300"/>
+      </div>
+      <div class="group">
+        <label for="maxBpm">Max BPM</label>
+        <input id="maxBpm" type="number" value="120" min="20" max="300"/>
+      </div>
+      <div class="group">
+        <label for="changeInterval">Change speed every (sec)</label>
+        <input id="changeInterval" type="number" value="15" min="3" max="600"/>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="group">
+        <label for="minSession">Min session (minutes)</label>
+        <input id="minSession" type="number" value="5" min="1" max="999"/>
+      </div>
+      <div class="group">
+        <label for="maxSession">Max session (minutes)</label>
+        <input id="maxSession" type="number" value="15" min="1" max="999"/>
+      </div>
+      <div class="group">
+        <label><input id="scramble" type="checkbox"/> Scramble video order</label>
+      </div>
+    </div>
+
+    <fieldset class="group">
+      <legend>Metronome / Voice Cues</legend>
+      <label class="slider-label" for="tickVolume">Volume: <span id="volLabel">50%</span></label>
+      <input id="tickVolume" type="range" min="0" max="1" step="0.01" value="0.5"/>
+      <div class="row squeeze">
+        <label><input id="enableTick" type="checkbox" checked/> Enable Tick</label>
+        <label><input id="enableVoice" type="checkbox" checked/> Enable Voice Cues</label>
+      </div>
+    </fieldset>
+
+    
+    <div class="group" id="tasks-settings">
+      <h3>Tasks</h3>
+      <label><input type="checkbox" id="enableTasks"/> Enable Tasks</label>
+      <div id="tasksBox" style="display:none; margin-left:12px; margin-top:10px;">
+        <div class="row" style="align-items:center;">
+          <label>Task Interval: <span id="taskIntervalValue">10</span>s</label>
+          <input type="range" id="taskInterval" min="1" max="50" value="10"/>
+        </div>
+        <div style="margin-top:8px;">
+          <button id="randomizeTasks" type="button">Randomize</button>
+          <label style="margin-left:12px;"><input type="checkbox" id="selectAllTasks"/> Select All</label>
+        </div>
+        <div id="task-options" style="margin-top:10px; line-height:1.8;">
+          <label><input type="checkbox" class="task-option" value="Double Strokes"> Double Strokes</label><br>
+          <label><input type="checkbox" class="task-option" value="Halved Strokes"> Halved Strokes</label><br>
+          <label><input type="checkbox" class="task-option" value="Teasing Strokes"> Teasing Strokes</label><br>
+          <label><input type="checkbox" class="task-option" value="Acceleration Cycles"> Acceleration Cycles</label><br>
+          <label><input type="checkbox" class="task-option" value="Random Beats"> Random Beats</label><br>
+          <label><input type="checkbox" class="task-option" value="Random Stroke Speed"> Random Stroke Speed</label><br>
+          <label><input type="checkbox" class="task-option" value="Red Light Green Light"> Red Light Green Light</label><br>
+          <label><input type="checkbox" class="task-option" value="Cluster Strokes"> Cluster Strokes</label><br>
+        </div>
+      </div>
+    </div>
+
+<div class="actions">
+      <button id="startBtn">Start</button>
+      <button id="resetBtn" class="ghost">Reset</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="hidden">
+    <div id="playerWrap">
+      <!-- Native video or iframe will be inserted here -->
+    </div>
+
+    
+    <div id="overlay">
+      <div id="taskBubble" class="speech-bubble" style="display:none; position:absolute; top:10px; left:10px; z-index:1000;"></div>
+
+      <!-- NEW: Canvas-based meters inserted inside game -->
+      <div id="metersRow">
+        <canvas id="beatLine" width="900" height="140" aria-label="Beat line meter"></canvas>
+        <canvas id="vMeter" width="64" height="220" aria-label="Vertical pump meter"></canvas>
+      </div>
+      <!-- Hidden placeholders to satisfy any legacy references -->
+      <div id="strokeMeter" style="display:none"><div id="strokeThumb"></div></div>
+      <div id="beatTrack" style="display:none"></div>
+
+      <div id="controls">
+        <button id="prevBtn" class="ghost">⏮ Prev</button>
+        <button id="nextBtn" class="ghost">⏭ Next</button>
+        <button id="endBtn">End Session</button>
+      </div>
+    </div>
+
+    <!-- Complete screen -->
+    <div id="complete" class="hidden">
+      <div class="card">
+        <h2>Session Complete 🎉</h2>
+        <button id="returnBtn">Return to Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sounds -->
+  <audio id="tick" src="sounds/tick.wav" preload="auto"></audio>
+  <audio id="voiceFaster" src="sounds/faster.mp3" preload="auto"></audio>
+  <audio id="voiceSlower" src="sounds/slower.mp3" preload="auto"></audio>
+  <audio id="voiceKeep" src="sounds/keep.mp3" preload="auto"></audio>
+
+  <script src="script.js"></script>
+
+
+  <audio id="tickAudio" src="tick.wav" preload="auto"></audio>
+</body>
+</html>
