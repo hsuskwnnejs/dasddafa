@@ -217,7 +217,6 @@ function autoEnd(){
   cleanupBeatVisuals();
   el.complete.classList.remove('hidden');
 }
-
 // Media support (native video + images + YouTube + Pornhub)
 
 function loadMedia(i){
@@ -260,6 +259,27 @@ function loadMedia(i){
     el.playerWrap.appendChild(ifr);
     return;
   }
+
+  // Fallback: treat as video
+  const v = document.createElement('video');
+  v.src = url;
+  v.playsInline = true;
+  v.autoplay = true;
+  v.controls = true;
+  v.muted = false;
+
+  v.addEventListener('click', e=>e.preventDefault());
+  v.addEventListener('ended', ()=>{
+    if (idx === list.length-1) loadMedia(0);
+    else loadMedia(idx+1);
+  });
+
+  el.playerWrap.appendChild(v);
+
+  v.play().catch(()=>{
+    v.muted = true;
+    v.play().catch(()=>{});
+  });
 }
 
 function renderDirectImage(url) {
@@ -293,44 +313,18 @@ function renderDirectImage(url) {
   el.playerWrap.appendChild(wrap);
 }
 
-  // fallback: treat as video
-  const v = document.createElement('video');
-  v.src = url;
-  v.playsInline = true;
-  v.autoplay = true;
-  v.controls = true;
-  v.muted = false;
-
-  v.addEventListener('click', e=>e.preventDefault());
-  v.addEventListener('ended', ()=>{
-    if (idx === list.length-1) loadMedia(0);
-    else loadMedia(idx+1);
-  });
-
-  el.playerWrap.appendChild(v);
-
-  v.play().catch(()=>{
-    v.muted = true;
-    v.play().catch(()=>{});
-  });
+async function renderLuscious(url){
+  // Clear any previous timer
+  if (lusciousTimer) { clearInterval(lusciousTimer); lusciousTimer = null; }
+  el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Loading gallery…</div>';
+  const id = extractLusciousAlbumId(url);
+  if (!id){
+    el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Could not detect album ID from this URL. Paste a gallery URL like <code>https://luscious.net/albums/my-album_123456/</code>.</div>';
+    return;
+  }
+  // (rest of your renderLuscious stays the same)
 }
 
-
-  
-
-
-
-
-
-  async function renderLuscious(url){
-    // Clear any previous timer
-    if (lusciousTimer) { clearInterval(lusciousTimer); lusciousTimer = null; }
-    el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Loading gallery…</div>';
-    const id = extractLusciousAlbumId(url);
-    if (!id){
-      el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Could not detect album ID from this URL. Paste a gallery URL like <code>https://luscious.net/albums/my-album_123456/</code>.</div>';
-      return;
-    }
     // Try GraphQL API
     let images = [];
     try {
