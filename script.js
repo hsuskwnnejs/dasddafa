@@ -313,17 +313,9 @@ function renderDirectImage(url) {
   el.playerWrap.appendChild(wrap);
 }
 
-async function renderLuscious(url){
-  // Clear any previous timer
-  if (lusciousTimer) { clearInterval(lusciousTimer); lusciousTimer = null; }
-  el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Loading gallery…</div>';
-  const id = extractLusciousAlbumId(url);
-  if (!id){
-    el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Could not detect album ID from this URL. Paste a gallery URL like <code>https://luscious.net/albums/my-album_123456/</code>.</div>';
-    return;
-  }
+
   // (rest of your renderLuscious stays the same)
-}
+
 
     // Try GraphQL API
     let images = [];
