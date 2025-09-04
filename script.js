@@ -319,19 +319,7 @@ function renderDirectImage(url) {
   
 
 
-  
-function detectLinkType(u){
-  if (isImageUrl(u)) return 'direct';
-  try {
-    const parsed = new URL(u, window.location.href);
-    const host = parsed.hostname.toLowerCase();
-    const path = parsed.pathname.toLowerCase();
-    if (host.includes('youtube.com') || host.includes('youtu.be')) return 'youtube';
-    if (host.includes('pornhub.com')) return 'pornhub';
-    if (host.endsWith('luscious.net') && path.startsWith('/albums/')) return 'luscious';
-  } catch(e){}
-  return 'direct';
-}
+
 
 
   async function renderLuscious(url){
