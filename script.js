@@ -349,30 +349,59 @@ async function renderLuscious(url){
           }
         }`
       };
-      const res = await fetch(`/.netlify/functions/lusciousProxy?id=${id}`, {
-        method: "POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify(q),
-        mode: "cors",
-        credentials: "omit"
-      });
-      if (res.ok){
-        const data = await res.json();
-        const items = (((data||{}).data||{}).picture||{}).list?.items||[];
-        images = items.map(it => it.url_to_original || it.url_to_resized || it.url_to_medium).filter(Boolean);
-      }
-    } catch(e){ /* ignore for graceful fallback */ }
+function renderLuscious(url) {
+  if (lusciousTimer) { clearInterval(lusciousTimer); lusciousTimer = null; }
+  el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Loading gallery…</div>';
 
-    if (!images.length){
+  const id = extractLusciousAlbumId(url);
+  if (!id) {
+    el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Could not detect album ID from this URL. Paste a gallery URL like <code>https://luscious.net/albums/my-album_123456/</code>.</div>';
+    return;
+  }
+
+  const q = {
+    operationName: "PictureListInsideAlbum",
+    variables: { album_id: String(id), page: 1, items_per_page: 50 },
+    query: `query PictureListInsideAlbum($album_id: ID!, $page: Int!, $items_per_page: Int!) {
+      picture {
+        list(album_id: $album_id, page: $page, items_per_page: $items_per_page) {
+          items {
+            id
+            url_to_original
+            url_to_resized
+            url_to_medium
+          }
+        }
+      }
+    }`
+  };
+
+  fetch(`/.netlify/functions/lusciousProxy?id=${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(q),
+    mode: "cors",
+    credentials: "omit"
+  })
+  .then(res => res.ok ? res.json() : null)
+  .then(data => {
+    let images = [];
+    if (data) {
+      const items = (((data||{}).data||{}).picture||{}).list?.items || [];
+      images = items.map(it => it.url_to_original || it.url_to_resized || it.url_to_medium).filter(Boolean);
+    }
+
+    if (!images.length) {
       el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Could not load images directly (CORS or API blocked).<br/>Workarounds: 1) Use a CORS proxy; 2) Paste direct image URLs; 3) Download images and paste local file URLs.</div>';
       return;
     }
 
-    // Build simple slideshow
+    // --- Build simple slideshow ---
     let i = 0;
     el.playerWrap.innerHTML = "";
     const wrap = document.createElement('div');
     wrap.style.cssText = "position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000";
+
     const img = document.createElement('img');
     img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;user-select:none";
     img.draggable = false;
@@ -384,6 +413,7 @@ async function renderLuscious(url){
       b.style.cssText = "position:absolute;top:50%;transform:translateY(-50%);"+side+":8px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.25);padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer";
       return b;
     };
+
     const prev = makeBtn("◀", "left");
     const next = makeBtn("▶", "right");
 
@@ -403,7 +433,6 @@ async function renderLuscious(url){
     prev.addEventListener('click', ()=> show(i-1));
     next.addEventListener('click', ()=> show(i+1));
     wrap.addEventListener('click', (e)=>{ 
-      // click right half -> next, left half -> prev
       const rect = wrap.getBoundingClientRect();
       if (e.clientX > rect.left + rect.width/2) show(i+1); else show(i-1);
     });
@@ -414,11 +443,16 @@ async function renderLuscious(url){
     el.playerWrap.appendChild(wrap);
     show(0);
 
-    // Auto-advance using changeMs
+    // Auto-advance
     if (lusciousTimer) clearInterval(lusciousTimer);
     lusciousTimer = setInterval(()=> show(i+1), Math.max(3000, changeMs));
-  }
-  function intOrString(v){ try{ const n = parseInt(v,10); return Number.isNaN(n) ? v : n; } catch(e){ return v; } }
+  })
+  .catch(e => {
+    console.error(e);
+    el.playerWrap.innerHTML = '<div style="padding:16px;text-align:center;font:14px system-ui">Failed to fetch images.</div>';
+  });
+}
+
   // --- End Luscious.net support ---
 
 
