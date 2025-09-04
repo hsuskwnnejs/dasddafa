@@ -220,7 +220,6 @@ function onBeat(){
 
   // Media support (native video + images + YouTube + Pornhub)
 
-  
 function loadMedia(i){
   if (list.length === 0) return;
   idx = (i + list.length) % list.length;
@@ -231,72 +230,60 @@ function loadMedia(i){
     renderDirectImage(url);
     return;
   }
+
   const type = detectLinkType(url);
-  if (type === 'luscious') { renderLuscious(url); return; }
+
+  if (type === 'luscious') {
+    renderLuscious(url);
+    return;
+  }
+
   if (type === 'youtube') {
     const id = parseYouTubeId(url);
     const src = `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&playsinline=1&enablejsapi=1`;
     const ifr = document.createElement('iframe');
     ifr.src = src;
     ifr.allow = 'autoplay; encrypted-media; picture-in-picture';
-    ifr.style.width = '100%'; ifr.style.height = '100%';
+    ifr.style.width = '100%';
+    ifr.style.height = '100%';
     el.playerWrap.appendChild(ifr);
     return;
   }
+
   if (type === 'pornhub') {
     const embed = `https://www.pornhub.com/embed/${extractPHKey(url)}`;
     const ifr = document.createElement('iframe');
     ifr.src = embed;
     ifr.allow = 'autoplay; encrypted-media; picture-in-picture';
-    ifr.style.width = '100%'; ifr.style.height = '100%';
+    ifr.style.width = '100%';
+    ifr.style.height = '100%';
     el.playerWrap.appendChild(ifr);
     return;
   }
+
+  // fallback: treat as video
   const v = document.createElement('video');
-  v.src = url; v.playsInline = true; v.autoplay = true; v.controls = true; v.muted = false;
+  v.src = url;
+  v.playsInline = true;
+  v.autoplay = true;
+  v.controls = true;
+  v.muted = false;
+
   v.addEventListener('click', e=>e.preventDefault());
-  v.addEventListener('ended', ()=>{ if (idx === list.length-1) loadMedia(0); else loadMedia(idx+1); });
+  v.addEventListener('ended', ()=>{
+    if (idx === list.length-1) loadMedia(0);
+    else loadMedia(idx+1);
+  });
+
   el.playerWrap.appendChild(v);
-  v.play().catch(()=>{ v.muted = true; v.play().catch(()=>{}); });
+
+  v.play().catch(()=>{
+    v.muted = true;
+    v.play().catch(()=>{});
+  });
 }
 
-      // Direct link: choose image or video
-      if (isImageUrl(url)) {
-        const img = document.createElement('img');
-        img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;display:block;margin:0 auto;background:#000";
-        img.draggable = false;
-        img.referrerPolicy = 'no-referrer'; // avoid hotlink referrer blocking
-        let triedProxy = false;
-        img.onerror = () => {
-          if (triedProxy) return;
-          triedProxy = true;
-          img.src = proxied(url);
-        };
-        img.src = url;
-        el.playerWrap.appendChild(img);
-      } else {
-        const v = document.createElement('video');
-        v.src = url;
-        v.playsInline = true;
-        v.autoplay = true;
-        v.controls = true;
-        v.muted = false;
-        v.onplay = ()=>{};
-        v.onerror = ()=>{};
-        // prevent redirect on click
-        v.addEventListener('click', e=>e.preventDefault());
-        v.addEventListener('ended', ()=>{
-          // On last item, loop to start; do NOT auto-end.
-          if (idx === list.length-1) { loadMedia(0); }
-          else { loadMedia(idx+1); }
-        });
-        el.playerWrap.appendChild(v);
-        v.play().catch(()=>{
-          v.muted = true;
-          v.play().catch(()=>{});
-        });
-      }
-    }
+
   
 
 
@@ -313,6 +300,7 @@ function detectLinkType(u){
   } catch(e){}
   return 'direct';
 }
+
 
   async function renderLuscious(url){
     // Clear any previous timer
