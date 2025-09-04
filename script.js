@@ -193,32 +193,32 @@ function onBeat(){
     [el.tick, el.voiceFaster, el.voiceSlower, el.voiceKeep].forEach(a=>a.volume=vol);
 
     // Swap screens
-    el.settings.classList.add('hidden');
-    el.game.classList.remove('hidden');
-    el.complete.classList.add('hidden');
-    ended = false;
+  el.settings.classList.add('hidden');
+  el.game.classList.remove('hidden');
+  el.complete.classList.add('hidden');
+  ended = false;
 
-    loadMedia(idx);
-    startBeatEngine();
-    const _tasksToggle = document.getElementById('enableTasks');
-    if(!_tasksToggle || !_tasksToggle.checked){ startChangeTimer(); }
-    startStrokeRAF();
-    if (sessionMs>0) sessionId = setTimeout(autoEnd, sessionMs);
-  }
+  loadMedia(idx);
+  startBeatEngine();
+  const _tasksToggle = document.getElementById('enableTasks');
+  if(!_tasksToggle || !_tasksToggle.checked){ startChangeTimer(); }
+  startStrokeRAF();
+  if (sessionMs>0) sessionId = setTimeout(autoEnd, sessionMs);
+}
 
-  function stopToSettings(){
-    cleanup();
-    el.game.classList.add('hidden');
-    el.settings.classList.remove('hidden');
-  }
+function stopToSettings(){
+  cleanup();
+  el.game.classList.add('hidden');
+  el.settings.classList.remove('hidden');
+}
 
-  function autoEnd(){
-    ended = true;
-    cleanupBeatVisuals();
-    el.complete.classList.remove('hidden');
-  }
+function autoEnd(){
+  ended = true;
+  cleanupBeatVisuals();
+  el.complete.classList.remove('hidden');
+}
 
-  // Media support (native video + images + YouTube + Pornhub)
+// Media support (native video + images + YouTube + Pornhub)
 
 function loadMedia(i){
   if (list.length === 0) return;
@@ -260,6 +260,38 @@ function loadMedia(i){
     el.playerWrap.appendChild(ifr);
     return;
   }
+}
+
+function renderDirectImage(url) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#000';
+
+  const img = document.createElement('img');
+  img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;display:block;user-select:none';
+  img.decoding = 'async';
+  img.loading = 'eager';
+  img.referrerPolicy = 'no-referrer';
+
+  let retried = false;
+  img.onerror = () => {
+    if (!retried) {
+      retried = true;
+      const bust = (url.includes('?') ? '&' : '?') + '__rb=' + Date.now();
+      img.src = url + bust;
+      return;
+    }
+    wrap.innerHTML = `<div style="color:#fff;padding:16px;text-align:center;font:14px system-ui">
+      Image blocked (403). <br>
+      <a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#8ff;text-decoration:underline">
+        Open in new tab
+      </a>
+    </div>`;
+  };
+
+  img.src = url;
+  wrap.appendChild(img);
+  el.playerWrap.appendChild(wrap);
+}
 
   // fallback: treat as video
   const v = document.createElement('video');
